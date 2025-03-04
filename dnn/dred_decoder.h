@@ -41,9 +41,13 @@ struct OpusDRED {
     int          nb_latents;
     int          process_stage;
     int          dred_offset;
+    ec_dec       ec;
+    int q0;
+    int dQ;
+    int qmax;
 };
 
 
-int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames, int dred_frame_offset);
+int dred_ec_decode(OpusDRED *dec, const opus_uint8 *bytes, int num_bytes, int min_feature_frames, int dred_frame_offset, int enable_IS);
 
 #endif

@@ -1396,7 +1396,7 @@ void opus_dred_free(OpusDRED *dec)
 #endif
 }
 
-int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int *dred_end, int defer_processing)
+int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int *dred_end, int defer_processing, int enable_IS)
 {
 #ifdef ENABLE_DRED
    const unsigned char *payload;
@@ -1414,7 +1414,11 @@ int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned ch
       int min_feature_frames;
       offset = 100*max_dred_samples/sampling_rate;
       min_feature_frames = IMIN(2 + offset, 2*DRED_NUM_REDUNDANCY_FRAMES);
-      dred_ec_decode(dred, payload, payload_len, min_feature_frames, dred_frame_offset);
+      for(int index = 0; index < min_feature_frames/4; index++) {
+         int dred_frame_start = 2*index;
+         int dred_frame_end = 4*index+1;
+         dred_ec_decode(dred, payload, payload_len, dred_frame_end, dred_frame_start, !index);
+      }
       if (!defer_processing)
          opus_dred_process(dred_dec, dred, dred);
       if (dred_end) *dred_end = IMAX(0, -dred->dred_offset*sampling_rate/400);
