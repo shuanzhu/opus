@@ -586,7 +586,7 @@ OPUS_EXPORT void opus_dred_free(OpusDRED *dec);
   * @returns Offset (positive) of the first decoded DRED samples, zero if no DRED is present, or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int *dred_end, int defer_processing) OPUS_ARG_NONNULL(1);
-
+OPUS_EXPORT int opus_decode_dred(const unsigned char* data, int len, unsigned char* red_data, int* red_len, int max_buf_size);
 /** Finish decoding an Opus DRED packet. The function only needs to be called if opus_dred_parse() was called with defer_processing=1.
   * The source and destination will often be the same DRED state.
   * @param [in] dred_dec <tt>OpusDRED*</tt>: DRED Decoder state

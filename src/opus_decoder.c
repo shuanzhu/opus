@@ -1396,6 +1396,39 @@ void opus_dred_free(OpusDRED *dec)
 #endif
 }
 
+int opus_decode_dred(const unsigned char* data, int len, unsigned char* red_data, int* red_len, int max_buf_size)
+{
+#ifdef ENABLE_DRED
+   if (data = NULL || len <= 0 || red_data == NULL || red_len == NULL || max_buf_size <=0)
+      return OPUS_BAD_ARG;
+   int err;
+   int sampling_rate = 48000;
+   int max_dred_samples = 10 * 960; //200ms
+   int dred_end = 0;
+   OpusDRED *dred=NULL;
+   OpusDREDDecoder *dred_dec=NULL;
+   dred_dec = opus_dred_decoder_create(&err);
+   dred = opus_dred_alloc(&err);
+   int ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(48000, IMAX(0, max_dred_samples)), sampling_rate, &dred_end, 0);
+   if(ret > 0) {
+      int nb_feature = dred->nb_latents * 4 * 20;
+      if (max_buf_size < nb_feature * sizeof(float)) return OPUS_BUFFER_TOO_SMALL;
+      for(int i = 0; i < nb_feature; i++) {
+         memcpy(red_data+i*sizeof(float), &dred->fec_features[i], sizeof(float));
+      }
+      for(int i = 0; i < dred->nb_latents * 2; i++) {
+         red_len[i] = 40*sizeof(float);
+      }
+      return dred->nb_latents * 2;
+   }
+   else
+      return OPUS_INVALID_PACKET;
+
+#else
+   return OPUS_UNIMPLEMENTED;
+#endif
+}
+
 int opus_dred_parse(OpusDREDDecoder *dred_dec, OpusDRED *dred, const unsigned char *data, opus_int32 len, opus_int32 max_dred_samples, opus_int32 sampling_rate, int *dred_end, int defer_processing)
 {
 #ifdef ENABLE_DRED
