@@ -607,6 +607,7 @@ OPUS_EXPORT int opus_dred_process(OpusDREDDecoder *dred_dec, const OpusDRED *src
   * @returns Number of decoded samples or @ref opus_errorcodes
   */
 OPUS_EXPORT int opus_decoder_dred_decode(OpusDecoder *st, const OpusDRED *dred, opus_int32 dred_offset, opus_int16 *pcm, opus_int32 frame_size);
+OPUS_EXPORT int opus_dred_decode(OpusDecoder *st, const char* features, opus_int32 nb_features, opus_int16 *pcm, opus_int32 frame_size);
 
 /** Decode audio from an Opus DRED packet with floating point output.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
