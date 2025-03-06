@@ -700,7 +700,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
          int feature_offset;
          /* We floor instead of rounding because 5-ms overlap compensates for the missing 0.5 rounding offset. */
          feature_offset = init_frames - i - 2 + (int)floor(((float)dred_offset + dred->dred_offset*F10/4)/F10);
-         if (feature_offset <= 4*dred->nb_latents-1 && feature_offset >= 0) {
+         if (feature_offset <= 2 && feature_offset >= 0) {
            lpcnet_plc_fec_add(&st->lpcnet, dred->fec_features+feature_offset*DRED_NUM_FEATURES);
          } else {
            if (feature_offset >= 0) lpcnet_plc_fec_add(&st->lpcnet, NULL);
@@ -1417,21 +1417,22 @@ int opus_decode_dred(const unsigned char* data, int len, unsigned char* red_data
    int sampling_rate = 48000;
    int max_dred_samples = 10 * 960; //200ms
    int dred_end = 0;
+   int feature_offset = 20; // 1 feature vector
    OpusDRED *dred=NULL;
    OpusDREDDecoder *dred_dec=NULL;
    dred_dec = opus_dred_decoder_create(&err);
    dred = opus_dred_alloc(&err);
    int ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(48000, IMAX(0, max_dred_samples)), sampling_rate, &dred_end, 0);
    if(ret > 0) {
-      int nb_feature = dred->nb_latents * 4 * 20;
+      int nb_feature = dred->nb_latents * 4 * 20; // 1 latents -> 40ms
+      int i = 0;
       if (max_buf_size < nb_feature * sizeof(float)) return OPUS_BUFFER_TOO_SMALL;
-      for(int i = 0; i < nb_feature; i++) {
-         memcpy(red_data+i*sizeof(float), &dred->fec_features[i], sizeof(float));
+      memcpy(red_data, &dred->fec_features[feature_offset], nb_feature * sizeof(float));
+      for(i = 0; i < (dred->nb_latents-1) * 2; i++) {
+         red_len[i] = 40*sizeof(float); // 20ms -> 2 features
       }
-      for(int i = 0; i < dred->nb_latents * 2; i++) {
-         red_len[i] = 40*sizeof(float);
-      }
-      nb_frames = dred->nb_latents * 2;
+      red_len[i] = 60*sizeof(float); // 30ms -> 3 features
+      nb_frames = i + 1;
    }
    opus_dred_free(dred);
    opus_dred_decoder_destroy(dred_dec);
@@ -1507,17 +1508,16 @@ OPUS_EXPORT int opus_dred_decode(OpusDecoder *st, const char* features, opus_int
 #ifdef ENABLE_DRED
    int decoded_samples = 0;
    int err = 0;
-   int dred_offset = nb_features * 20;
+   int dred_offset = 20;
    OpusDRED *dred=NULL;
    dred = opus_dred_alloc(&err);
    dred->nb_latents = 1;
    dred->process_stage = 2;
    dred->dred_offset = 10;
-   nb_features = dred->nb_latents * 2 * nb_features * 20;
-   for(int i = 0; i < nb_features; i++) {
-      memcpy(&dred->fec_features[i+dred_offset], &features+i*sizeof(float), sizeof(float));
-   }
+   nb_features = dred->nb_latents * nb_features * 20;
+   memcpy(&dred->fec_features[dred_offset], features, nb_features*sizeof(float));
    decoded_samples = opus_decoder_dred_decode(st, dred, frame_size, pcm, frame_size);
+   opus_dred_free(dred);
    return decoded_samples;
 #else
    return OPUS_UNIMPLEMENTED;

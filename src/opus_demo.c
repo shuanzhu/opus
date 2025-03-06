@@ -413,6 +413,8 @@ int main(int argc, char *argv[])
     int lost_count=0;
     FILE *packet_loss_file=NULL;
     int dred_duration=0;
+    unsigned char red_data[2000];
+    int red_len[12];
 #ifdef ENABLE_OSCE_TRAINING_DATA
     int silk_random_switching = 0;
     int silk_frame_counter = 0;
@@ -993,8 +995,9 @@ int main(int argc, char *argv[])
                 opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                 dred_input = lost_count*output_samples;
                 /* Only decode the amount we need to fill in the gap. */
-                ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(48000, IMAX(0, dred_input)), sampling_rate, &dred_end, 0);
-                dred_input = ret > 0 ? ret : 0;
+                ret = opus_decode_dred(data, len, red_data, red_len, 2000);
+//                ret = opus_dred_parse(dred_dec, dred, data, len, IMIN(48000, IMAX(0, dred_input)), sampling_rate, &dred_end, 0);
+//                dred_input = ret > 0 ? ret : 0;
             }
             /* FIXME: Figure out how to trigger the decoder when the last packet of the file is lost. */
             for (fr=0;fr<run_decoder;fr++) {
@@ -1005,7 +1008,12 @@ int main(int argc, char *argv[])
                 } else if (fr < lost_count) {
                    opus_decoder_ctl(dec, OPUS_GET_LAST_PACKET_DURATION(&output_samples));
                    if (dred_input > 0)
-                      output_samples = opus_decoder_dred_decode(dec, dred, (lost_count-fr)*output_samples, out, output_samples);
+                   {
+                       int nb_features = red_len[lost_count-fr-1]/20/sizeof(float);
+                       //int nb_features = red_len[lost_count-fr-1]/20/sizeof(float);
+                       output_samples = opus_dred_decode(dec, &red_data[(lost_count-fr-1)*40*sizeof(float)], nb_features, out, output_samples);
+//                       output_samples = opus_decoder_dred_decode(dec, dred, (lost_count-fr)*output_samples, out, output_samples);
+                   }
                    else
                       output_samples = opus_decode(dec, NULL, 0, out, output_samples, 0);
                 } else {
