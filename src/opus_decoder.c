@@ -1411,7 +1411,7 @@ int opus_decode_dred(const unsigned char* data, int len, unsigned char* red_data
 {
 #ifdef ENABLE_DRED
    int nb_frames = 0;
-   if (data = NULL || len <= 0 || red_data == NULL || red_len == NULL || max_buf_size <=0)
+   if (data == NULL || len <= 0 || red_data == NULL || red_len == NULL || max_buf_size <=0)
       return OPUS_BAD_ARG;
    int err;
    int sampling_rate = 48000;
@@ -1507,6 +1507,7 @@ OPUS_EXPORT int opus_dred_decode(OpusDecoder *st, const char* features, opus_int
 #ifdef ENABLE_DRED
    int decoded_samples = 0;
    int err = 0;
+   int dred_offset = nb_features * 20;
    OpusDRED *dred=NULL;
    dred = opus_dred_alloc(&err);
    dred->nb_latents = 1;
@@ -1514,7 +1515,7 @@ OPUS_EXPORT int opus_dred_decode(OpusDecoder *st, const char* features, opus_int
    dred->dred_offset = 10;
    nb_features = dred->nb_latents * 2 * nb_features * 20;
    for(int i = 0; i < nb_features; i++) {
-      memcpy(&dred->fec_features[i], &features+i*sizeof(float), sizeof(float));
+      memcpy(&dred->fec_features[i+dred_offset], &features+i*sizeof(float), sizeof(float));
    }
    decoded_samples = opus_decoder_dred_decode(st, dred, frame_size, pcm, frame_size);
    return decoded_samples;
