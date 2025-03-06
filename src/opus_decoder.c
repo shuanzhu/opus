@@ -1136,6 +1136,17 @@ int opus_packet_get_nb_samples(const unsigned char packet[], opus_int32 len,
       return samples;
 }
 
+int opus_decode_lbrr(const unsigned char packet[], opus_int32 len, unsigned char* lbrr_data, int* lbrr_len)
+{
+   int ret = 0;
+   if(opus_packet_has_lbrr(packet, len)){
+      lbrr_data = packet;
+      *lbrr_len = len;
+      ret = len;
+   }
+   return ret;
+}
+
 int opus_packet_has_lbrr(const unsigned char packet[], opus_int32 len)
 {
    int ret;
